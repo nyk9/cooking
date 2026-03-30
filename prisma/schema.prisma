@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  title     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  messages  Message[]
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  role           String       // "user" | "assistant"
+  content        String
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+
+model Recipe {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  ingredients Json           // [{ name: string, amount: string }]
+  steps       Json           // string[]
+  cookTime    Int?           // minutes
+  tags        String[]
+  source      RecipeSource   @default(AI_GENERATED)
+  rating      Int?           // 1-5
+  memo        String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  shoppingLists ShoppingListRecipe[]
+}
+
+enum RecipeSource {
+  AI_GENERATED
+  USER_CREATED
+}
+
+model ShoppingList {
+  id        String               @id @default(cuid())
+  name      String
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  recipes   ShoppingListRecipe[]
+  items     ShoppingItem[]
+}
+
+model ShoppingListRecipe {
+  shoppingListId String
+  recipeId       String
+  shoppingList   ShoppingList @relation(fields: [shoppingListId], references: [id], onDelete: Cascade)
+  recipe         Recipe       @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@id([shoppingListId, recipeId])
+}
+
+model ShoppingItem {
+  id             String       @id @default(cuid())
+  shoppingListId String
+  name           String
+  quantity       String?
+  checked        Boolean      @default(false)
+  shoppingList   ShoppingList @relation(fields: [shoppingListId], references: [id], onDelete: Cascade)
+}
+
+model Preference {
+  id        String         @id @default(cuid())
+  category  PreferenceCategory
+  value     String
+  createdAt DateTime       @default(now())
+}
+
+enum PreferenceCategory {
+  LIKE       // 好きな食材・料理
+  DISLIKE    // 嫌いな食材・料理
+  ALLERGY    // アレルギー
+  OTHER      // その他
+}
