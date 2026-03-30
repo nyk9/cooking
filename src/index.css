@@ -1,0 +1,33 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --color-primary: #e67e22;
+  --color-primary-dark: #d35400;
+  --color-bg: #fafaf8;
+  --color-surface: #ffffff;
+  --color-border: #e8e4df;
+  --color-text: #2c2c2c;
+  --color-text-muted: #7a7a7a;
+  --color-user-bubble: #e67e22;
+  --color-assistant-bubble: #f4f0eb;
+  --radius: 12px;
+  --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
