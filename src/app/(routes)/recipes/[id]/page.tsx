@@ -26,8 +26,8 @@ export default async function RecipeDetailPage({ params }: Props) {
   const recipe = await db.recipe.findUnique({ where: { id } });
   if (!recipe) notFound();
 
-  const ingredients = recipe.ingredients as Ingredient[];
-  const steps = recipe.steps as string[];
+  const ingredients = recipe.ingredients as unknown as Ingredient[];
+  const steps = recipe.steps as unknown as string[];
 
   return (
     <div className="space-y-6 max-w-2xl">

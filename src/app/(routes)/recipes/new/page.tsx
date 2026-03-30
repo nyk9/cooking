@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
@@ -11,19 +11,28 @@ const schema = z.object({
   description: z.string().optional(),
   ingredients: z.array(z.object({ name: z.string().min(1), amount: z.string() })).min(1),
   steps: z.array(z.object({ value: z.string().min(1) })).min(1),
-  cookTime: z.coerce.number().int().positive().optional().or(z.literal("")),
+  cookTime: z.union([z.coerce.number().int().positive(), z.literal("")]).optional(),
   tags: z.string().optional(),
-  rating: z.coerce.number().int().min(1).max(5).optional().or(z.literal("")),
+  rating: z.union([z.coerce.number().int().min(1).max(5), z.literal("")]).optional(),
   memo: z.string().optional(),
 });
-type FormValues = z.infer<typeof schema>;
+interface FormValues {
+  name: string;
+  description?: string;
+  ingredients: { name: string; amount: string }[];
+  steps: { value: string }[];
+  cookTime?: number | "";
+  tags?: string;
+  rating?: number | "";
+  memo?: string;
+}
 
 export default function NewRecipePage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
 
   const { register, control, handleSubmit, formState: { errors } } = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as unknown as Resolver<FormValues>,
     defaultValues: {
       ingredients: [{ name: "", amount: "" }],
       steps: [{ value: "" }],

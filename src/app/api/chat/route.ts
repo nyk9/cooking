@@ -1,19 +1,36 @@
-import { streamText } from "ai";
+import { streamText, convertToModelMessages, type UIMessage } from "ai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { getModel, ModelId } from "@/lib/ai";
 
+const uiMessagePartSchema = z.object({
+  type: z.string(),
+  text: z.string().optional(),
+}).passthrough();
+
+const uiMessageSchema = z.object({
+  id: z.string(),
+  role: z.enum(["user", "assistant", "system"]),
+  parts: z.array(uiMessagePartSchema).optional().default([]),
+  metadata: z.unknown().optional(),
+}).passthrough();
+
 const bodySchema = z.object({
   conversationId: z.string().optional(),
-  messages: z.array(
-    z.object({
-      role: z.enum(["user", "assistant"]),
-      content: z.string(),
-    })
-  ),
+  id: z.string().optional(),
+  messages: z.array(uiMessageSchema),
   modelId: z.string().optional(),
+  trigger: z.string().optional(),
+  messageId: z.string().optional(),
 });
+
+function getUIMessageText(msg: { parts?: Array<{ type: string; text?: string }> }): string {
+  return (msg.parts ?? [])
+    .filter((p): p is { type: "text"; text: string } => p.type === "text" && typeof p.text === "string")
+    .map((p) => p.text)
+    .join("");
+}
 
 async function buildSystemPrompt(): Promise<string> {
   const [preferences, recipes] = await Promise.all([
@@ -60,8 +77,10 @@ export async function POST(req: Request) {
   // 会話を保存/更新
   let convId = conversationId;
   if (!convId) {
-    const firstUserMessage = messages.find((m) => m.role === "user")?.content ?? "新しい会話";
-    const title = firstUserMessage.slice(0, 50);
+    const firstUserMessage = [...messages].find((m) => m.role === "user");
+    const title = firstUserMessage
+      ? getUIMessageText(firstUserMessage).slice(0, 50)
+      : "新しい会話";
     const conv = await db.conversation.create({ data: { title } });
     convId = conv.id;
   }
@@ -69,21 +88,27 @@ export async function POST(req: Request) {
   // ユーザーメッセージをDBに保存（最後のユーザーメッセージのみ）
   const lastUserMessage = [...messages].reverse().find((m) => m.role === "user");
   if (lastUserMessage) {
-    const existing = await db.message.findFirst({
-      where: { conversationId: convId, content: lastUserMessage.content, role: "user" },
-      orderBy: { createdAt: "desc" },
-    });
-    if (!existing) {
-      await db.message.create({
-        data: { conversationId: convId, role: "user", content: lastUserMessage.content },
+    const content = getUIMessageText(lastUserMessage);
+    if (content) {
+      const existing = await db.message.findFirst({
+        where: { conversationId: convId, content, role: "user" },
+        orderBy: { createdAt: "desc" },
       });
+      if (!existing) {
+        await db.message.create({
+          data: { conversationId: convId, role: "user", content },
+        });
+      }
     }
   }
+
+  // UIMessage[] -> ModelMessage[] に変換
+  const modelMessages = await convertToModelMessages(messages as UIMessage[]);
 
   const result = streamText({
     model,
     system: systemPrompt,
-    messages,
+    messages: modelMessages,
     onFinish: async ({ text }) => {
       // AIの返答をDBに保存
       await db.message.create({
@@ -96,9 +121,8 @@ export async function POST(req: Request) {
     },
   });
 
-  const response = result.toDataStreamResponse();
   // conversationIdをヘッダーで返す
-  const headers = new Headers(response.headers);
-  headers.set("X-Conversation-Id", convId);
-  return new Response(response.body, { headers, status: response.status });
+  return result.toUIMessageStreamResponse({
+    headers: { "X-Conversation-Id": convId! },
+  });
 }
