@@ -8,7 +8,7 @@
 
 - **Framework**: Next.js (App Router) + TypeScript
 - **UI**: Shadcn UI + Tailwind CSS v4
-- **AI**: Vercel AI SDK（マルチモデル対応: Claude / GPT）
+- **AI**: Vercel AI SDK + @ai-sdk/google（Google Gemini）
 - **DB**: Prisma + Neon (PostgreSQL)
 - **Form**: React Hook Form + Zod
 - **Package manager**: Bun
@@ -19,18 +19,27 @@
 src/
 ├── app/                  # Next.js App Router
 │   ├── (routes)/
-│   │   ├── chat/         # チャット一覧・詳細
-│   │   ├── recipes/      # レシピ一覧・詳細・登録
-│   │   ├── shopping/     # 買い物リスト
-│   │   └── preferences/  # 好み設定
-│   └── api/              # API Routes
+│   │   ├── chat/         # チャット一覧・詳細（/chat, /chat/new, /chat/[id]）
+│   │   ├── recipes/      # レシピ一覧・詳細・登録（/recipes, /recipes/new, /recipes/[id]）
+│   │   ├── shopping/     # 買い物リスト（/shopping）
+│   │   └── preferences/  # 好み設定（/preferences）
+│   └── api/
+│       ├── chat/         # POST: streamText でAI応答
+│       ├── conversations/ # GET: 一覧, GET/DELETE: [id]
+│       ├── recipes/      # GET/POST: 一覧・作成, GET/PATCH/DELETE: [id]
+│       ├── shopping/     # GET/POST: リスト, DELETE: [id], POST: [id]/items
+│       ├── shopping/items/ # PATCH/DELETE: [id]
+│       └── preferences/  # GET/POST: 一覧・作成, DELETE: [id]
 ├── components/
 │   ├── ui/               # Shadcn コンポーネント
 │   └── features/         # 機能別コンポーネント
+│       ├── chat-interface.tsx   # チャットUI（useChat hook）
+│       ├── recipe-rating.tsx    # 星評価コンポーネント
+│       └── shopping-list.tsx    # 買い物リストカード
 ├── lib/
-│   ├── db.ts             # Prisma client
-│   ├── ai.ts             # AI SDK 設定
-│   └── utils.ts          # ユーティリティ
+│   ├── db.ts             # Prisma client（PrismaNeon adapter）
+│   ├── ai.ts             # AI SDK設定（ModelId, MODELS, getModel）
+│   └── utils.ts          # cn() ユーティリティ
 └── generated/prisma/     # Prisma 生成ファイル（編集不可）
 prisma/
 └── schema.prisma         # DBスキーマ
@@ -44,7 +53,7 @@ prisma/
 | レシピ保存 | AI提案 or 手動登録。1〜5の評価付け可能 |
 | 買い物リスト | 複数レシピを選択して統合リストを生成。チェックボックスで管理 |
 | 好み設定 | 好き・嫌い・アレルギーを登録。AIのコンテキストとして使用 |
-| モデル切り替え | チャット画面内でClaude/GPT等を切り替え可能 |
+| モデル切り替え | チャット画面内でGemini 2.0 Flash / 2.5 Flashを切り替え可能 |
 
 ## DBスキーマ（概要）
 
@@ -59,9 +68,8 @@ prisma/
 `.env.example` を参照。`.env` は gitignore 済み。
 
 ```
-DATABASE_URL   # Neon接続文字列
-ANTHROPIC_API_KEY
-OPENAI_API_KEY
+DATABASE_URL                  # Neon接続文字列
+GOOGLE_GENERATIVE_AI_API_KEY  # Google AI Studio APIキー
 ```
 
 ## 開発コマンド
@@ -86,7 +94,7 @@ bunx prisma generate                           # クライアント再生成
 - システムプロンプトに以下を毎回注入:
   - ユーザーの好み設定（Preference テーブル）
   - 直近のレシピ履歴と評価（Recipe テーブル上位10件）
-- モデルはチャット画面のセレクターで切り替え（デフォルト: Claude）
+- モデルはチャット画面のセレクターで切り替え（デフォルト: gemini-2.0-flash）
 - 会話履歴はDBに保存し、同一セッション内で文脈を維持
 
 ## コーディング規約

@@ -1,21 +1,17 @@
-import { anthropic } from "@ai-sdk/anthropic";
-import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 
-export type ModelId = "claude-sonnet-4-6" | "gpt-4o" | "gpt-4o-mini";
+export type ModelId = "gemini-2.0-flash" | "gemini-2.5-flash";
 
 export const MODELS: { id: ModelId; label: string }[] = [
-  { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
-  { id: "gpt-4o", label: "GPT-4o" },
-  { id: "gpt-4o-mini", label: "GPT-4o mini" },
+  { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
+  { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
 ];
 
 export function getModel(modelId: ModelId) {
   switch (modelId) {
-    case "claude-sonnet-4-6":
-      return anthropic("claude-sonnet-4-6");
-    case "gpt-4o":
-      return openai("gpt-4o");
-    case "gpt-4o-mini":
-      return openai("gpt-4o-mini");
+    case "gemini-2.0-flash":
+      return google("gemini-2.0-flash");
+    case "gemini-2.5-flash":
+      return google("gemini-2.5-flash");
   }
 }
