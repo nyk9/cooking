@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { RecipeRating } from "@/components/features/recipe-rating";
+import { LogCookingButton } from "@/components/features/log-cooking-button";
 
 interface Ingredient {
   name: string;
@@ -26,8 +27,8 @@ export default async function RecipeDetailPage({ params }: Props) {
   const recipe = await db.recipe.findUnique({ where: { id } });
   if (!recipe) notFound();
 
-  const ingredients = recipe.ingredients as Ingredient[];
-  const steps = recipe.steps as string[];
+  const ingredients = recipe.ingredients as unknown as Ingredient[];
+  const steps = recipe.steps as unknown as string[];
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -58,7 +59,10 @@ export default async function RecipeDetailPage({ params }: Props) {
         <p className="text-muted-foreground">{recipe.description}</p>
       )}
 
-      <RecipeRating recipeId={recipe.id} initialRating={recipe.rating} />
+      <div className="flex items-center gap-3">
+        <RecipeRating recipeId={recipe.id} initialRating={recipe.rating} />
+        <LogCookingButton recipeId={recipe.id} />
+      </div>
 
       <div className="space-y-3">
         <h2 className="text-lg font-semibold">材料</h2>

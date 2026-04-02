@@ -37,7 +37,9 @@ model Recipe {
   memo        String?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
-  shoppingLists ShoppingListRecipe[]
+  shoppingLists   ShoppingListRecipe[]
+  cookingLogs     CookingLog[]
+  mealPlanEntries MealPlanEntry[]
 }
 
 enum RecipeSource {
@@ -84,4 +86,49 @@ enum PreferenceCategory {
   DISLIKE    // 嫌いな食材・料理
   ALLERGY    // アレルギー
   OTHER      // その他
+}
+
+model CookingLog {
+  id       String   @id @default(cuid())
+  recipeId String
+  cookedAt DateTime @default(now())
+  note     String?
+  recipe   Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+}
+
+model Ingredient {
+  id        String    @id @default(cuid())
+  name      String
+  quantity  String?
+  unit      String?
+  category  String?
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model MealPlan {
+  id        String          @id @default(cuid())
+  weekStart DateTime        // その週の月曜日
+  entries   MealPlanEntry[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model MealPlanEntry {
+  id         String    @id @default(cuid())
+  mealPlanId String
+  date       DateTime
+  mealType   MealType
+  recipeName String
+  recipeId   String?
+  note       String?
+  mealPlan   MealPlan  @relation(fields: [mealPlanId], references: [id], onDelete: Cascade)
+  recipe     Recipe?   @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
 }

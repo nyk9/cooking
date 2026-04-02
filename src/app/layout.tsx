@@ -1,19 +1,8 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ModeToggle } from "@/components/mode-toggle";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "料理アシスタント",
@@ -29,7 +18,7 @@ export default function RootLayout({
     <html
       lang="ja"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className="h-full antialiased"
     >
       <head />
       <body className="min-h-full flex flex-col bg-background text-foreground">
@@ -65,6 +54,24 @@ export default function RootLayout({
                   className="px-3 py-1.5 rounded-md text-sm hover:bg-accent transition-colors"
                 >
                   買い物リスト
+                </Link>
+                <Link
+                  href="/cooking-log"
+                  className="px-3 py-1.5 rounded-md text-sm hover:bg-accent transition-colors"
+                >
+                  調理ログ
+                </Link>
+                <Link
+                  href="/ingredients"
+                  className="px-3 py-1.5 rounded-md text-sm hover:bg-accent transition-colors"
+                >
+                  食材管理
+                </Link>
+                <Link
+                  href="/meal-plan"
+                  className="px-3 py-1.5 rounded-md text-sm hover:bg-accent transition-colors"
+                >
+                  週間献立
                 </Link>
                 <Link
                   href="/preferences"
