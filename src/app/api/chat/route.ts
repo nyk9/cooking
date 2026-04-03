@@ -2,7 +2,7 @@ import { streamText } from "ai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { getModel, ModelId } from "@/lib/ai";
+import { getModel, ModelId, DEFAULT_MODEL } from "@/lib/ai";
 
 const bodySchema = z.object({
   conversationId: z.string().optional(),
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
   }
 
   const { conversationId, messages, modelId } = parsed.data;
-  const model = getModel((modelId as ModelId) ?? "gemini-2.0-flash");
+  const model = getModel((modelId as ModelId) ?? DEFAULT_MODEL);
   const systemPrompt = await buildSystemPrompt();
 
   // 会話を保存/更新
@@ -96,7 +96,7 @@ export async function POST(req: Request) {
     },
   });
 
-  const response = result.toDataStreamResponse();
+  const response = result.toTextStreamResponse();
   // conversationIdをヘッダーで返す
   const headers = new Headers(response.headers);
   headers.set("X-Conversation-Id", convId);

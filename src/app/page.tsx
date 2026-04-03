@@ -35,6 +35,30 @@ export default function Home() {
           <span className="text-xs text-muted-foreground">食材をまとめる</span>
         </Link>
         <Link
+          href="/meal-plan"
+          className="flex flex-col items-center gap-2 p-6 rounded-xl border hover:bg-accent transition-colors"
+        >
+          <span className="text-3xl">📅</span>
+          <span className="font-medium">週間献立</span>
+          <span className="text-xs text-muted-foreground">AIが1週間を提案</span>
+        </Link>
+        <Link
+          href="/ingredients"
+          className="flex flex-col items-center gap-2 p-6 rounded-xl border hover:bg-accent transition-colors"
+        >
+          <span className="text-3xl">🥦</span>
+          <span className="font-medium">食材管理</span>
+          <span className="text-xs text-muted-foreground">消費期限を把握する</span>
+        </Link>
+        <Link
+          href="/cooking-log"
+          className="flex flex-col items-center gap-2 p-6 rounded-xl border hover:bg-accent transition-colors"
+        >
+          <span className="text-3xl">📒</span>
+          <span className="font-medium">調理ログ</span>
+          <span className="text-xs text-muted-foreground">作った料理を記録</span>
+        </Link>
+        <Link
           href="/preferences"
           className="flex flex-col items-center gap-2 p-6 rounded-xl border hover:bg-accent transition-colors"
         >

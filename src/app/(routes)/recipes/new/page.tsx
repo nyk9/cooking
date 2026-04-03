@@ -11,9 +11,9 @@ const schema = z.object({
   description: z.string().optional(),
   ingredients: z.array(z.object({ name: z.string().min(1), amount: z.string() })).min(1),
   steps: z.array(z.object({ value: z.string().min(1) })).min(1),
-  cookTime: z.coerce.number().int().positive().optional().or(z.literal("")),
+  cookTime: z.string().optional(),
   tags: z.string().optional(),
-  rating: z.coerce.number().int().min(1).max(5).optional().or(z.literal("")),
+  rating: z.string().optional(),
   memo: z.string().optional(),
 });
 type FormValues = z.infer<typeof schema>;
