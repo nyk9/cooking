@@ -8,6 +8,7 @@ const createSchema = z.object({
   unit: z.string().optional(),
   category: z.string().optional(),
   expiresAt: z.string().datetime().optional().nullable(),
+  purchasedAt: z.string().datetime().optional().nullable(),
 });
 
 export async function GET() {
@@ -23,7 +24,7 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  const { name, quantity, unit, category, expiresAt } = parsed.data;
+  const { name, quantity, unit, category, expiresAt, purchasedAt } = parsed.data;
   const ingredient = await db.ingredient.create({
     data: {
       name,
@@ -31,6 +32,7 @@ export async function POST(req: Request) {
       unit,
       category,
       expiresAt: expiresAt ? new Date(expiresAt) : null,
+      purchasedAt: purchasedAt ? new Date(purchasedAt) : null,
     },
   });
   return NextResponse.json(ingredient, { status: 201 });
