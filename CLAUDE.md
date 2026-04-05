@@ -97,7 +97,7 @@ bunx prisma generate                           # クライアント再生成
 ## セットアップ手順
 
 1. `bun install`
-2. `.env` を作成し、`DATABASE_URL` と `GOOGLE_GENERATIVE_AI_API_KEY` を設定
+2. `.env.example` をコピーして `.env` を作成し、各値を設定
 3. `bunx prisma migrate dev --name init` でDB初期化
 4. `bun run dev`
 
