@@ -78,7 +78,7 @@ prisma/
 
 ## 環境変数
 
-`.env` は gitignore 済み。
+`.env.example` を参照。`.env` は gitignore 済み。
 
 ```
 DATABASE_URL                  # Neon接続文字列
