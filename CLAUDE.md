@@ -22,20 +22,27 @@ src/
 │   │   ├── chat/         # チャット一覧・詳細（/chat, /chat/new, /chat/[id]）
 │   │   ├── recipes/      # レシピ一覧・詳細・登録（/recipes, /recipes/new, /recipes/[id]）
 │   │   ├── shopping/     # 買い物リスト（/shopping）
-│   │   └── preferences/  # 好み設定（/preferences）
+│   │   ├── preferences/  # 好み設定（/preferences）
+│   │   ├── cooking-log/  # 調理ログ（/cooking-log）
+│   │   ├── ingredients/  # 食材管理（/ingredients）
+│   │   └── meal-plan/    # 献立生成（/meal-plan）
 │   └── api/
 │       ├── chat/         # POST: streamText でAI応答
 │       ├── conversations/ # GET: 一覧, GET/DELETE: [id]
 │       ├── recipes/      # GET/POST: 一覧・作成, GET/PATCH/DELETE: [id]
 │       ├── shopping/     # GET/POST: リスト, DELETE: [id], POST: [id]/items
 │       ├── shopping/items/ # PATCH/DELETE: [id]
-│       └── preferences/  # GET/POST: 一覧・作成, DELETE: [id]
+│       ├── preferences/  # GET/POST: 一覧・作成, DELETE: [id]
+│       ├── cooking-log/  # GET/POST: 一覧・作成, DELETE: [id]
+│       ├── ingredients/  # GET/POST: 一覧・作成, PATCH/DELETE: [id]
+│       └── meal-plan/    # GET/POST: 生成・取得
 ├── components/
 │   ├── ui/               # Shadcn コンポーネント
 │   └── features/         # 機能別コンポーネント
 │       ├── chat-interface.tsx   # チャットUI（useChat hook）
 │       ├── recipe-rating.tsx    # 星評価コンポーネント
-│       └── shopping-list.tsx    # 買い物リストカード
+│       ├── shopping-list.tsx    # 買い物リストカード
+│       └── log-cooking-button.tsx # 調理ログ記録ボタン
 ├── lib/
 │   ├── db.ts             # Prisma client（PrismaNeon adapter）
 │   ├── ai.ts             # AI SDK設定（ModelId, MODELS, getModel）
@@ -53,7 +60,10 @@ prisma/
 | レシピ保存 | AI提案 or 手動登録。1〜5の評価付け可能 |
 | 買い物リスト | 複数レシピを選択して統合リストを生成。チェックボックスで管理 |
 | 好み設定 | 好き・嫌い・アレルギーを登録。AIのコンテキストとして使用 |
-| モデル切り替え | チャット画面内でGemini 2.0 Flash / 2.5 Flashを切り替え可能 |
+| モデル切り替え | チャット画面内でGemini 3.1 Flash Lite / 2.5 Flash / 2.0 Flashを切り替え可能 |
+| 調理ログ | レシピごとに調理日・メモを記録。日付順に一覧表示 |
+| 食材管理 | 冷蔵庫の食材を登録。賞味期限アラート付き。献立生成のコンテキストとしても使用 |
+| 献立生成 | AI（`generateObject`）で1週間分の献立を自動生成。好み・食材・レシピ履歴を考慮 |
 
 ## DBスキーマ（概要）
 
@@ -62,6 +72,9 @@ prisma/
 - `ShoppingList` / `ShoppingItem`: 買い物リスト（複数レシピを統合）
 - `ShoppingListRecipe`: ShoppingList ↔ Recipe の中間テーブル
 - `Preference`: 好み設定（`category: LIKE | DISLIKE | ALLERGY | OTHER`）
+- `CookingLog`: 調理ログ（Recipe に紐づく、調理日・メモ）
+- `Ingredient`: 食材管理（名前・数量・単位・カテゴリ・賞味期限）
+- `MealPlan` / `MealPlanEntry`: 献立（週単位、朝昼夕の食事タイプ別）
 
 ## 環境変数
 
@@ -94,7 +107,7 @@ bunx prisma generate                           # クライアント再生成
 - システムプロンプトに以下を毎回注入:
   - ユーザーの好み設定（Preference テーブル）
   - 直近のレシピ履歴と評価（Recipe テーブル上位10件）
-- モデルはチャット画面のセレクターで切り替え（デフォルト: gemini-2.0-flash）
+- モデルはチャット画面のセレクターで切り替え（デフォルト: gemini-3.1-flash-lite-preview）
 - 会話履歴はDBに保存し、同一セッション内で文脈を維持
 
 ## コーディング規約
@@ -103,3 +116,15 @@ bunx prisma generate                           # クライアント再生成
 - Prisma client は `src/lib/db.ts` から import
 - フォームは React Hook Form + Zod スキーマで型安全に
 - コンポーネントは機能単位で `src/components/features/` に分割
+
+## 認証・認可（将来対応予定）
+
+- 現時点では個人利用のため認証機能は未実装（全APIが公開状態）
+- 将来的にユーザー認証・データ分離を導入予定
+
+## 未実装・今後の課題
+
+- 認証・認可（上記参照）
+- Error Boundary（`error.tsx`）によるエラーUI
+- テスト（ユニットテスト・E2Eテスト）
+- APIレスポンスのページネーション
