@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import ReactMarkdown from "react-markdown";
 import { MODELS, ModelId, DEFAULT_MODEL } from "@/lib/ai";
 
 interface Message {
@@ -63,7 +64,6 @@ export function ChatInterface({ conversationId, initialMessages = [] }: Props) {
       const convId = res.headers.get("X-Conversation-Id");
       if (convId && !savedConvId) {
         setSavedConvId(convId);
-        router.replace(`/chat/${convId}`);
       }
 
       if (!res.body) return;
@@ -83,6 +83,11 @@ export function ChatInterface({ conversationId, initialMessages = [] }: Props) {
             m.id === assistantId ? { ...m, content: accumulated } : m
           )
         );
+      }
+
+      // ストリーミング完了後にURLを更新（ナビゲーションによるアンマウントを防ぐ）
+      if (convId && !conversationId) {
+        router.replace(`/chat/${convId}`);
       }
     } catch (err) {
       if ((err as Error).name !== "AbortError") {
@@ -132,13 +137,17 @@ export function ChatInterface({ conversationId, initialMessages = [] }: Props) {
             className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm whitespace-pre-wrap ${
+              className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
                 m.role === "user"
-                  ? "bg-primary text-primary-foreground rounded-br-sm"
-                  : "bg-muted rounded-bl-sm"
+                  ? "bg-primary text-primary-foreground rounded-br-sm whitespace-pre-wrap"
+                  : "bg-muted rounded-bl-sm prose prose-sm dark:prose-invert max-w-none"
               }`}
             >
-              {m.content}
+              {m.role === "assistant" ? (
+                <ReactMarkdown>{m.content}</ReactMarkdown>
+              ) : (
+                m.content
+              )}
             </div>
           </div>
         ))}

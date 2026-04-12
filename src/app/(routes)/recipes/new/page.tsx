@@ -9,11 +9,14 @@ import { z } from "zod";
 const schema = z.object({
   name: z.string().min(1, "レシピ名を入力してください"),
   description: z.string().optional(),
-  ingredients: z.array(z.object({ name: z.string().min(1), amount: z.string() })).min(1),
-  steps: z.array(z.object({ value: z.string().min(1) })).min(1),
+  ingredients: z.array(z.object({ name: z.string().min(1), amount: z.string() })).min(1, "材料を1つ以上追加してください"),
+  steps: z.array(z.object({ value: z.string().min(1) })).min(1, "手順を1つ以上追加してください"),
   cookTime: z.string().optional(),
   tags: z.string().optional(),
-  rating: z.string().optional(),
+  rating: z.string().optional().refine(
+    (v) => !v || (/^\d+$/.test(v) && Number(v) >= 1 && Number(v) <= 5),
+    { message: "1〜5の値を入力してください" }
+  ),
   memo: z.string().optional(),
 });
 type FormValues = z.infer<typeof schema>;
@@ -111,6 +114,7 @@ export default function NewRecipePage() {
           >
             + 材料を追加
           </button>
+          {errors.ingredients?.root && <p className="text-xs text-destructive">{errors.ingredients.root.message}</p>}
         </div>
 
         <div className="space-y-2">
@@ -141,6 +145,7 @@ export default function NewRecipePage() {
           >
             + 手順を追加
           </button>
+          {errors.steps?.root && <p className="text-xs text-destructive">{errors.steps.root.message}</p>}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -163,6 +168,7 @@ export default function NewRecipePage() {
               className="w-full h-9 rounded-md border bg-background px-3 text-sm"
               placeholder="5"
             />
+            {errors.rating && <p className="text-xs text-destructive">{errors.rating.message}</p>}
           </div>
         </div>
 
