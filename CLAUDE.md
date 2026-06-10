@@ -29,7 +29,7 @@ src/
 │   └── api/
 │       ├── chat/         # POST: streamText でAI応答
 │       ├── conversations/ # GET: 一覧, GET/DELETE: [id]
-│       ├── recipes/      # GET/POST: 一覧・作成, GET/PATCH/DELETE: [id]
+│       ├── recipes/      # GET/POST: 一覧・作成, GET/PATCH/DELETE: [id], POST: extract（チャットからレシピ抽出・保存）
 │       ├── shopping/     # GET/POST: リスト, DELETE: [id], POST: [id]/items
 │       ├── shopping/items/ # PATCH/DELETE: [id]
 │       ├── preferences/  # GET/POST: 一覧・作成, DELETE: [id]
@@ -57,7 +57,7 @@ prisma/
 | 機能 | 概要 |
 |------|------|
 | AIチャット | チャット形式でレシピを相談・提案。ユーザーの好み・過去レシピをシステムプロンプトに注入 |
-| レシピ保存 | AI提案 or 手動登録。1〜5の評価付け可能 |
+| レシピ保存 | チャットのAI応答から1クリックで構造化保存（`generateObject`で抽出） or 手動登録。1〜5の評価付け可能 |
 | 買い物リスト | 複数レシピを選択して統合リストを生成。チェックボックスで管理 |
 | 好み設定 | 好き・嫌い・アレルギーを登録。AIのコンテキストとして使用 |
 | モデル切り替え | チャット画面内でGemini 3.1 Flash Lite / 2.5 Flash / 2.0 Flashを切り替え可能 |
@@ -125,6 +125,6 @@ bunx prisma generate                           # クライアント再生成
 ## 未実装・今後の課題
 
 - 認証・認可（上記参照）
-- Error Boundary（`error.tsx`）によるエラーUI
 - テスト（ユニットテスト・E2Eテスト）
 - APIレスポンスのページネーション
+- ESLintの修復（eslint-plugin-reactがESLint 10未対応で`bun run lint`が実行不能）
