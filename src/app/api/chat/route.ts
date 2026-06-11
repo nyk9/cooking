@@ -2,7 +2,7 @@ import { streamText } from "ai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { getModel, ModelId, DEFAULT_MODEL } from "@/lib/ai";
+import { getModel, DEFAULT_MODEL, MODEL_IDS } from "@/lib/ai";
 
 const bodySchema = z.object({
   conversationId: z.string().optional(),
@@ -12,7 +12,7 @@ const bodySchema = z.object({
       content: z.string(),
     })
   ),
-  modelId: z.string().optional(),
+  modelId: z.enum(MODEL_IDS).optional(),
 });
 
 async function buildSystemPrompt(): Promise<string> {
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
   }
 
   const { conversationId, messages, modelId } = parsed.data;
-  const model = getModel((modelId as ModelId) ?? DEFAULT_MODEL);
+  const model = getModel(modelId ?? DEFAULT_MODEL);
   const systemPrompt = await buildSystemPrompt();
 
   // 会話を保存/更新

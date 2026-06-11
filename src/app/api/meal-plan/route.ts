@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { getModel, DEFAULT_MODEL, ModelId } from "@/lib/ai";
+import { getModel, DEFAULT_MODEL, MODEL_IDS } from "@/lib/ai";
 
 const mealPlanEntrySchema = z.object({
   date: z.string(), // YYYY-MM-DD
@@ -13,7 +13,7 @@ const mealPlanEntrySchema = z.object({
 
 const generateSchema = z.object({
   weekStart: z.string(), // YYYY-MM-DD (月曜日)
-  modelId: z.string().optional(),
+  modelId: z.enum(MODEL_IDS).optional(),
 });
 
 export async function GET() {
@@ -97,7 +97,7 @@ ${recipesText}
 
 各エントリーのdateフィールドは上記の日付リストからいずれかを使ってください。`;
 
-  const model = getModel((modelId as ModelId) ?? DEFAULT_MODEL);
+  const model = getModel(modelId ?? DEFAULT_MODEL);
 
   const { object } = await generateObject({
     model,

@@ -52,7 +52,7 @@ export default function MealPlanPage() {
   const [selectedPlanIdx, setSelectedPlanIdx] = useState(0);
   const [weekStart, setWeekStart] = useState(() => {
     const monday = getMonday(new Date());
-    return monday.toISOString().split("T")[0];
+    return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, "0")}-${String(monday.getDate()).padStart(2, "0")}`;
   });
 
   const fetchPlans = useCallback(async () => {
@@ -90,7 +90,7 @@ export default function MealPlanPage() {
     const days = Array.from({ length: 7 }, (_, i) => {
       const d = new Date(start);
       d.setDate(d.getDate() + i);
-      return d.toISOString().split("T")[0];
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     });
 
     return days.map((dateStr) => ({
