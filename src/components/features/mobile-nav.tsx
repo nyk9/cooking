@@ -24,13 +24,18 @@ export function MobileNav() {
       <button
         onClick={() => setOpen(!open)}
         className="md:hidden p-1.5 rounded-md hover:bg-accent transition-colors"
-        aria-label="メニューを開く"
+        aria-label={open ? "メニューを閉じる" : "メニューを開く"}
+        aria-expanded={open}
+        aria-controls="mobile-nav-menu"
       >
         {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
 
       {open && (
-        <div className="md:hidden absolute top-14 left-0 right-0 border-b bg-background z-50">
+        <div
+          id="mobile-nav-menu"
+          className="md:hidden absolute top-14 left-0 right-0 border-b bg-background z-50"
+        >
           <nav className="flex flex-col px-4 py-2">
             {NAV_ITEMS.map((item) => (
               <Link

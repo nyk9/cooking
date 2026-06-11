@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useEffect, useState, useCallback } from "react";
+import { memo, useRef, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 import { MODELS, ModelId, DEFAULT_MODEL } from "@/lib/ai";
 
 interface Message {
@@ -26,6 +27,12 @@ let msgCounter = 0;
 function newId() {
   return `msg-${++msgCounter}-${Date.now()}`;
 }
+
+// memo化: ストリーミング中、内容が変わったメッセージだけMarkdownを再パースする
+// remark-breaks: チャット応答の単一改行をそのまま改行として表示する
+const MarkdownMessage = memo(function MarkdownMessage({ content }: { content: string }) {
+  return <ReactMarkdown remarkPlugins={[remarkBreaks]}>{content}</ReactMarkdown>;
+});
 
 export function ChatInterface({ conversationId, initialMessages = [] }: Props) {
   const router = useRouter();
@@ -206,7 +213,7 @@ export function ChatInterface({ conversationId, initialMessages = [] }: Props) {
               }`}
             >
               {m.role === "assistant" ? (
-                <ReactMarkdown>{m.content}</ReactMarkdown>
+                <MarkdownMessage content={m.content} />
               ) : (
                 m.content
               )}

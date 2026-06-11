@@ -46,9 +46,10 @@ export default function NewRecipePage() {
         description: data.description || undefined,
         ingredients: data.ingredients,
         steps: data.steps.map((s) => s.value),
-        cookTime: data.cookTime || undefined,
+        cookTime:
+          data.cookTime && Number(data.cookTime) > 0 ? Number(data.cookTime) : undefined,
         tags: data.tags ? data.tags.split(/[,、]/).map((t) => t.trim()).filter(Boolean) : [],
-        rating: data.rating || undefined,
+        rating: data.rating ? Number(data.rating) : undefined,
         memo: data.memo || undefined,
         source: "USER_CREATED",
       }),
