@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { MODELS, ModelId, DEFAULT_MODEL } from "@/lib/ai";
 
@@ -16,6 +17,11 @@ interface Props {
   initialMessages?: Message[];
 }
 
+type SaveState =
+  | { status: "saving" }
+  | { status: "saved"; recipeId: string }
+  | { status: "error"; message: string };
+
 let msgCounter = 0;
 function newId() {
   return `msg-${++msgCounter}-${Date.now()}`;
@@ -28,6 +34,8 @@ export function ChatInterface({ conversationId, initialMessages = [] }: Props) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({});
   const bottomRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -45,6 +53,7 @@ export function ChatInterface({ conversationId, initialMessages = [] }: Props) {
 
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
+    setChatError(null);
     setIsLoading(true);
 
     abortRef.current = new AbortController();
@@ -60,6 +69,17 @@ export function ChatInterface({ conversationId, initialMessages = [] }: Props) {
         }),
         signal: abortRef.current.signal,
       });
+
+      if (!res.ok) {
+        let message = "応答の取得に失敗しました。もう一度お試しください。";
+        try {
+          const data = await res.json();
+          if (typeof data?.error === "string") message = data.error;
+        } catch {
+          // JSONでないエラーレスポンスは既定メッセージのまま
+        }
+        throw new Error(message);
+      }
 
       const convId = res.headers.get("X-Conversation-Id");
       if (convId && !savedConvId) {
@@ -92,12 +112,54 @@ export function ChatInterface({ conversationId, initialMessages = [] }: Props) {
     } catch (err) {
       if ((err as Error).name !== "AbortError") {
         console.error("Chat error:", err);
+        // 失敗した送信を取り消して入力欄に戻す（再送しやすくする）
+        setMessages((prev) =>
+          prev.filter((m) => m.id !== userMessage.id && m.id !== assistantId)
+        );
+        setInput(text);
+        setChatError(
+          err instanceof Error && err.message
+            ? err.message
+            : "応答の取得に失敗しました。もう一度お試しください。"
+        );
       }
     } finally {
       setIsLoading(false);
       abortRef.current = null;
     }
-  }, [input, isLoading, messages, modelId, router, savedConvId]);
+  }, [input, isLoading, messages, modelId, router, savedConvId, conversationId]);
+
+  const handleSaveRecipe = useCallback(async (messageId: string, content: string) => {
+    setSaveStates((prev) => ({ ...prev, [messageId]: { status: "saving" } }));
+    try {
+      const res = await fetch("/api/recipes/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, modelId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(
+          typeof data?.error === "string" ? data.error : "レシピの保存に失敗しました"
+        );
+      }
+      setSaveStates((prev) => ({
+        ...prev,
+        [messageId]: { status: "saved", recipeId: data.id },
+      }));
+    } catch (err) {
+      setSaveStates((prev) => ({
+        ...prev,
+        [messageId]: {
+          status: "error",
+          message:
+            err instanceof Error && err.message
+              ? err.message
+              : "レシピの保存に失敗しました",
+        },
+      }));
+    }
+  }, [modelId]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -134,7 +196,7 @@ export function ChatInterface({ conversationId, initialMessages = [] }: Props) {
         {messages.map((m) => (
           <div
             key={m.id}
-            className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+            className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}
           >
             <div
               className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
@@ -149,6 +211,49 @@ export function ChatInterface({ conversationId, initialMessages = [] }: Props) {
                 m.content
               )}
             </div>
+            {m.role === "assistant" && m.content && !isLoading && (
+              <div className="mt-1.5 px-1 text-xs">
+                {(() => {
+                  const state = saveStates[m.id];
+                  if (!state) {
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => handleSaveRecipe(m.id, m.content)}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        📖 レシピとして保存
+                      </button>
+                    );
+                  }
+                  if (state.status === "saving") {
+                    return <span className="text-muted-foreground">レシピを抽出して保存中...</span>;
+                  }
+                  if (state.status === "saved") {
+                    return (
+                      <Link
+                        href={`/recipes/${state.recipeId}`}
+                        className="text-primary underline underline-offset-2"
+                      >
+                        ✓ 保存しました — レシピを見る
+                      </Link>
+                    );
+                  }
+                  return (
+                    <span className="text-destructive">
+                      {state.message}{" "}
+                      <button
+                        type="button"
+                        onClick={() => handleSaveRecipe(m.id, m.content)}
+                        className="underline underline-offset-2"
+                      >
+                        再試行
+                      </button>
+                    </span>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         ))}
         {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
@@ -160,6 +265,13 @@ export function ChatInterface({ conversationId, initialMessages = [] }: Props) {
         )}
         <div ref={bottomRef} />
       </div>
+
+      {/* エラー表示 */}
+      {chatError && (
+        <div className="mb-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {chatError}
+        </div>
+      )}
 
       {/* 入力フォーム */}
       <form onSubmit={handleSubmit} className="flex gap-2 pt-3 border-t">
