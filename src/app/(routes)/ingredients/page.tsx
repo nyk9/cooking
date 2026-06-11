@@ -13,14 +13,14 @@ interface Ingredient {
   createdAt: string;
 }
 
-function getExpiryStatus(expiresAt: string | null): {
+// now: 期限判定の基準時刻（ms）。グルーピング（expiringSoon）と同じ値を渡して表示と判定を一致させる
+function getExpiryStatus(expiresAt: string | null, now: number): {
   label: string;
   className: string;
 } | null {
   if (!expiresAt) return null;
-  const now = new Date();
   const exp = new Date(expiresAt);
-  const diffDays = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  const diffDays = Math.ceil((exp.getTime() - now) / (1000 * 60 * 60 * 24));
   if (diffDays < 0) return { label: "期限切れ", className: "text-red-600 bg-red-50 dark:bg-red-950/30" };
   if (diffDays === 0) return { label: "今日まで", className: "text-orange-600 bg-orange-50 dark:bg-orange-950/30" };
   if (diffDays <= 3) return { label: `あと${diffDays}日`, className: "text-yellow-600 bg-yellow-50 dark:bg-yellow-950/30" };
@@ -269,6 +269,7 @@ export default function IngredientsPage() {
               </h2>
               <IngredientList
                 items={expiringSoon}
+                now={now}
                 onEdit={startEdit}
                 onDelete={handleDelete}
               />
@@ -283,6 +284,7 @@ export default function IngredientsPage() {
               )}
               <IngredientList
                 items={others}
+                now={now}
                 onEdit={startEdit}
                 onDelete={handleDelete}
               />
@@ -296,17 +298,19 @@ export default function IngredientsPage() {
 
 function IngredientList({
   items,
+  now,
   onEdit,
   onDelete,
 }: {
   items: Ingredient[];
+  now: number;
   onEdit: (i: Ingredient) => void;
   onDelete: (id: string) => void;
 }) {
   return (
     <ul className="rounded-lg border divide-y">
       {items.map((ing) => {
-        const expiry = getExpiryStatus(ing.expiresAt);
+        const expiry = getExpiryStatus(ing.expiresAt, now);
         return (
           <li
             key={ing.id}
