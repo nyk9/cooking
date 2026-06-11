@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { getModel, DEFAULT_MODEL, ModelId } from "@/lib/ai";
+import { getModel, DEFAULT_MODEL, MODEL_IDS } from "@/lib/ai";
 
 const bodySchema = z.object({
   content: z.string().min(1),
-  modelId: z.string().optional(),
+  modelId: z.enum(MODEL_IDS).optional(),
 });
 
 // Gemini構造化出力ではoptionalよりnullableのほうが安定する
@@ -25,25 +25,42 @@ const extractionSchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const body = await req.json();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json(
+      { error: "リクエストボディをJSONとして解釈できませんでした" },
+      { status: 400 }
+    );
+  }
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
   const { content, modelId } = parsed.data;
-  const model = getModel((modelId as ModelId) ?? DEFAULT_MODEL);
+  const model = getModel(modelId ?? DEFAULT_MODEL);
 
-  const { object } = await generateObject({
-    model,
-    schema: extractionSchema,
-    prompt: `以下はAI料理アシスタントの応答です。この中からレシピ情報を抽出してください。
+  let object: z.infer<typeof extractionSchema>;
+  try {
+    ({ object } = await generateObject({
+      model,
+      schema: extractionSchema,
+      prompt: `以下はAI料理アシスタントの応答です。この中からレシピ情報を抽出してください。
 複数のレシピが含まれる場合は、最も詳しく説明されているメインのレシピを1つ抽出してください。
 材料と手順が揃った具体的なレシピが含まれない場合は isRecipe を false にしてください。
 
 ---
 ${content}`,
-  });
+    }));
+  } catch (err) {
+    console.error("recipe extraction failed:", err);
+    return NextResponse.json(
+      { error: "レシピの抽出に失敗しました。時間をおいて再試行してください" },
+      { status: 502 }
+    );
+  }
 
   if (!object.isRecipe || object.ingredients.length === 0 || object.steps.length === 0) {
     return NextResponse.json(

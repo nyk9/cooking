@@ -1,9 +1,12 @@
 import { google } from "@ai-sdk/google";
 
-export type ModelId =
-  | "gemini-3.1-flash-lite-preview"
-  | "gemini-2.5-flash"
-  | "gemini-2.0-flash";
+export const MODEL_IDS = [
+  "gemini-3.1-flash-lite-preview",
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+] as const;
+
+export type ModelId = (typeof MODEL_IDS)[number];
 
 export const DEFAULT_MODEL: ModelId = "gemini-3.1-flash-lite-preview";
 
