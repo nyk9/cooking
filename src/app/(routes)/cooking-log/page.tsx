@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { apiErrorMessage } from "@/lib/api-error";
 
 interface Recipe {
   id: string;
@@ -30,6 +31,7 @@ export default function CookingLogPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ recipeId: "", cookedAt: "", note: "" });
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const fetchLogs = useCallback(async () => {
     const res = await fetch("/api/cooking-log");
@@ -52,37 +54,42 @@ export default function CookingLogPage() {
     e.preventDefault();
     if (!form.recipeId) return;
     setSubmitting(true);
-    const res = await fetch("/api/cooking-log", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        recipeId: form.recipeId,
-        cookedAt: form.cookedAt ? new Date(form.cookedAt).toISOString() : undefined,
-        note: form.note || undefined,
-      }),
-    });
-    if (res.ok) {
+    setFormError(null);
+    try {
+      const res = await fetch("/api/cooking-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipeId: form.recipeId,
+          cookedAt: form.cookedAt ? new Date(form.cookedAt).toISOString() : undefined,
+          note: form.note || undefined,
+        }),
+      });
+      if (!res.ok) {
+        setFormError(
+          await apiErrorMessage(res, "記録の保存に失敗しました。もう一度お試しください。")
+        );
+        return;
+      }
       setForm({ recipeId: "", cookedAt: "", note: "" });
       setShowForm(false);
       fetchLogs();
+    } catch {
+      setFormError("通信に失敗しました。もう一度お試しください。");
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("この記録を削除しますか？")) return;
-    await fetch(`/api/cooking-log/${id}`, { method: "DELETE" });
-    setLogs((prev) => prev.filter((l) => l.id !== id));
-  };
-
-  const formatDate = (iso: string) => {
-    const d = new Date(iso);
-    return d.toLocaleDateString("ja-JP", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      weekday: "short",
-    });
+    try {
+      const res = await fetch(`/api/cooking-log/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setLogs((prev) => prev.filter((l) => l.id !== id));
+    } catch {
+      alert("削除に失敗しました。もう一度お試しください。");
+    }
   };
 
   // 日付ごとにグループ化
@@ -149,6 +156,11 @@ export default function CookingLogPage() {
               className="w-full rounded-md border bg-background px-3 py-2 text-sm resize-none"
             />
           </div>
+          {formError && (
+            <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {formError}
+            </div>
+          )}
           <button
             type="submit"
             disabled={submitting || !form.recipeId}

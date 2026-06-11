@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { apiErrorMessage } from "@/lib/api-error";
 
 const schema = z.object({
   name: z.string().min(1, "レシピ名を入力してください"),
@@ -24,6 +25,7 @@ type FormValues = z.infer<typeof schema>;
 export default function NewRecipePage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const { register, control, handleSubmit, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -38,27 +40,37 @@ export default function NewRecipePage() {
 
   const onSubmit = async (data: FormValues) => {
     setSubmitting(true);
-    const res = await fetch("/api/recipes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: data.name,
-        description: data.description || undefined,
-        ingredients: data.ingredients,
-        steps: data.steps.map((s) => s.value),
-        cookTime:
-          data.cookTime && Number(data.cookTime) > 0 ? Number(data.cookTime) : undefined,
-        tags: data.tags ? data.tags.split(/[,、]/).map((t) => t.trim()).filter(Boolean) : [],
-        rating: data.rating ? Number(data.rating) : undefined,
-        memo: data.memo || undefined,
-        source: "USER_CREATED",
-      }),
-    });
-    if (res.ok) {
+    setSubmitError(null);
+    try {
+      const res = await fetch("/api/recipes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: data.name,
+          description: data.description || undefined,
+          ingredients: data.ingredients,
+          steps: data.steps.map((s) => s.value),
+          cookTime:
+            data.cookTime && Number(data.cookTime) > 0 ? Number(data.cookTime) : undefined,
+          tags: data.tags ? data.tags.split(/[,、]/).map((t) => t.trim()).filter(Boolean) : [],
+          rating: data.rating ? Number(data.rating) : undefined,
+          memo: data.memo || undefined,
+          source: "USER_CREATED",
+        }),
+      });
+      if (!res.ok) {
+        setSubmitError(
+          await apiErrorMessage(res, "レシピの登録に失敗しました。もう一度お試しください。")
+        );
+        return;
+      }
       const recipe = await res.json();
       router.push(`/recipes/${recipe.id}`);
+    } catch {
+      setSubmitError("通信に失敗しました。もう一度お試しください。");
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   return (
@@ -190,6 +202,12 @@ export default function NewRecipePage() {
             placeholder="アレンジや気づきなど"
           />
         </div>
+
+        {submitError && (
+          <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {submitError}
+          </div>
+        )}
 
         <button
           type="submit"

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { apiErrorMessage } from "@/lib/api-error";
 
 interface MealPlanEntry {
   id: string;
@@ -49,6 +50,7 @@ export default function MealPlanPage() {
   const [plans, setPlans] = useState<MealPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
   const [selectedPlanIdx, setSelectedPlanIdx] = useState(0);
   const [weekStart, setWeekStart] = useState(() => {
     const monday = getMonday(new Date());
@@ -68,15 +70,22 @@ export default function MealPlanPage() {
 
   const handleGenerate = async () => {
     setGenerating(true);
+    setGenerateError(null);
     try {
       const res = await fetch("/api/meal-plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ weekStart }),
       });
-      if (res.ok) {
-        fetchPlans();
+      if (!res.ok) {
+        setGenerateError(
+          await apiErrorMessage(res, "献立の生成に失敗しました。もう一度お試しください。")
+        );
+        return;
       }
+      fetchPlans();
+    } catch {
+      setGenerateError("通信に失敗しました。もう一度お試しください。");
     } finally {
       setGenerating(false);
     }
@@ -133,6 +142,12 @@ export default function MealPlanPage() {
           </button>
         </div>
       </div>
+
+      {generateError && (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {generateError}
+        </div>
+      )}
 
       {generating && (
         <div className="rounded-lg border border-dashed p-6 text-center text-muted-foreground text-sm space-y-2">

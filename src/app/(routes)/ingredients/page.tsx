@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { apiErrorMessage } from "@/lib/api-error";
 
 interface Ingredient {
   id: string;
@@ -41,11 +42,17 @@ export default function IngredientsPage() {
     expiresAt: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  // render中にDate.now()を呼ばないよう、期限判定の基準時刻はフェッチ時に確定させる
+  const [now, setNow] = useState(0);
 
-  const fetchIngredients = useCallback(async () => {
-    const res = await fetch("/api/ingredients");
-    const data = await res.json();
-    setIngredients(data);
+  const fetchIngredients = useCallback(() => {
+    return fetch("/api/ingredients")
+      .then((res) => res.json())
+      .then((data) => {
+        setNow(Date.now());
+        setIngredients(data);
+      });
   }, []);
 
   useEffect(() => {
@@ -56,6 +63,7 @@ export default function IngredientsPage() {
     setForm({ name: "", quantity: "", unit: "", category: "", expiresAt: "" });
     setEditId(null);
     setShowForm(false);
+    setFormError(null);
   };
 
   const startEdit = (ing: Ingredient) => {
@@ -76,6 +84,7 @@ export default function IngredientsPage() {
     e.preventDefault();
     if (!form.name.trim()) return;
     setSubmitting(true);
+    setFormError(null);
 
     const payload = {
       name: form.name.trim(),
@@ -87,33 +96,47 @@ export default function IngredientsPage() {
         : null,
     };
 
-    const res = await fetch(
-      editId ? `/api/ingredients/${editId}` : "/api/ingredients",
-      {
-        method: editId ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }
-    );
+    try {
+      const res = await fetch(
+        editId ? `/api/ingredients/${editId}` : "/api/ingredients",
+        {
+          method: editId ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
 
-    if (res.ok) {
+      if (!res.ok) {
+        setFormError(
+          await apiErrorMessage(res, "保存に失敗しました。もう一度お試しください。")
+        );
+        return;
+      }
       resetForm();
       fetchIngredients();
+    } catch {
+      setFormError("通信に失敗しました。もう一度お試しください。");
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("この食材を削除しますか？")) return;
-    await fetch(`/api/ingredients/${id}`, { method: "DELETE" });
-    setIngredients((prev) => prev.filter((i) => i.id !== id));
+    try {
+      const res = await fetch(`/api/ingredients/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setIngredients((prev) => prev.filter((i) => i.id !== id));
+    } catch {
+      alert("削除に失敗しました。もう一度お試しください。");
+    }
   };
 
   // 消費期限でグループ分け
   const expiringSoon = ingredients.filter((i) => {
     if (!i.expiresAt) return false;
     const diffDays = Math.ceil(
-      (new Date(i.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+      (new Date(i.expiresAt).getTime() - now) / (1000 * 60 * 60 * 24)
     );
     return diffDays <= 3;
   });
@@ -207,6 +230,11 @@ export default function IngredientsPage() {
               />
             </div>
           </div>
+          {formError && (
+            <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {formError}
+            </div>
+          )}
           <div className="flex gap-2">
             <button
               type="submit"
