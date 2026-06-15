@@ -91,10 +91,20 @@ GOOGLE_GENERATIVE_AI_API_KEY  # Google AI Studio APIキー
 bun run dev                                    # 開発サーバー起動
 bun run lint                                   # ESLint（eslint-plugin-reactがESLint 10未対応のためv9に固定）
 bun test                                       # ユニットテスト（bun組み込み。探索範囲はbunfig.tomlでsrc配下に限定）
+bun run e2e:db:up                              # E2E用ローカルPostgres(Docker)を起動
+bun run test:e2e                               # E2Eテスト（Playwright。要Docker起動・AIはモック）
+bun run e2e:db:down                            # E2E用Postgresを停止・破棄
 bunx prisma migrate dev --name <name>          # マイグレーション作成・適用
 bunx prisma studio                             # DB GUI
 bunx prisma generate                           # クライアント再生成
 ```
+
+### E2Eテスト（Playwright）の前提
+
+- `.env.e2e.example` をコピーして `.env.e2e` を作成（Docker Postgres接続・`DB_DRIVER=pg`・`E2E_MOCK_AI=1`）
+- `bun run e2e:db:up` でテスト用Postgresを起動してから `bun run test:e2e`
+- AI（チャット・抽出・献立）は `E2E_MOCK_AI=1` で `src/lib/ai-mock-model.ts` のモックモデルに差し替わり、実APIを呼ばない
+- DBは Neon ではなくローカル Docker Postgres（`src/lib/db.ts` が `DB_DRIVER=pg` で `PrismaPg` に切替）
 
 ## セットアップ手順
 
@@ -127,6 +137,6 @@ bunx prisma generate                           # クライアント再生成
 ## 未実装・今後の課題
 
 - 認証・認可（上記参照）
-- テスト: ユニットテスト基盤（`bun test`）を導入済み。純粋ロジック（`src/lib/expiry.ts`・`api-error.ts`・`ai.ts`）とAPIルートのエラー契約（`recipes/extract`）をカバー。E2E自動化は今後の課題
+- テスト: ユニットテスト基盤（`bun test`）＋E2E基盤（Playwright + Docker Postgres + AIモック）を導入済み。ユニットは純粋ロジック（`src/lib/expiry.ts`・`api-error.ts`・`ai.ts`）とAPIエラー契約（`recipes/extract`）、E2Eは主要フロー（レシピ登録・食材・好み・買い物・チャット・献立）をカバー。CIへの組み込みは今後の課題
 - APIレスポンスのページネーション
 - ESLint 10への移行（eslint-plugin-reactが対応し次第。現在はESLint 9に固定して運用）

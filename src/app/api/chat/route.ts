@@ -54,7 +54,7 @@ export async function POST(req: Request) {
   }
 
   const { conversationId, messages, modelId } = parsed.data;
-  const model = getModel(modelId ?? DEFAULT_MODEL);
+  const model = await getModel(modelId ?? DEFAULT_MODEL);
   const systemPrompt = await buildSystemPrompt();
 
   // 会話を保存/更新

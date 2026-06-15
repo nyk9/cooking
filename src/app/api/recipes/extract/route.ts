@@ -40,7 +40,7 @@ export async function POST(req: Request) {
   }
 
   const { content, modelId } = parsed.data;
-  const model = getModel(modelId ?? DEFAULT_MODEL);
+  const model = await getModel(modelId ?? DEFAULT_MODEL);
 
   let object: z.infer<typeof extractionSchema>;
   try {
