@@ -97,7 +97,7 @@ ${recipesText}
 
 各エントリーのdateフィールドは上記の日付リストからいずれかを使ってください。`;
 
-  const model = getModel(modelId ?? DEFAULT_MODEL);
+  const model = await getModel(modelId ?? DEFAULT_MODEL);
 
   let object: { entries: z.infer<typeof mealPlanEntrySchema>[] };
   try {

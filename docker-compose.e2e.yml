@@ -1,0 +1,19 @@
+# E2Eテスト用のローカル Postgres。
+# 起動: docker compose -f docker-compose.e2e.yml up -d
+# 停止: docker compose -f docker-compose.e2e.yml down -v
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cooking-e2e-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: cooking_test
+    ports:
+      # 通常のローカル開発用Postgres(5432)と衝突しないよう5433にマップ
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d cooking_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
