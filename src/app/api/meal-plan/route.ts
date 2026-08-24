@@ -99,13 +99,22 @@ ${recipesText}
 
   const model = getModel(modelId ?? DEFAULT_MODEL);
 
-  const { object } = await generateObject({
-    model,
-    schema: z.object({
-      entries: z.array(mealPlanEntrySchema),
-    }),
-    prompt,
-  });
+  let object: { entries: z.infer<typeof mealPlanEntrySchema>[] };
+  try {
+    ({ object } = await generateObject({
+      model,
+      schema: z.object({
+        entries: z.array(mealPlanEntrySchema),
+      }),
+      prompt,
+    }));
+  } catch (err) {
+    console.error("meal plan generation failed:", err);
+    return NextResponse.json(
+      { error: "献立の生成に失敗しました。時間をおいて再試行してください" },
+      { status: 502 }
+    );
+  }
 
   // DBに保存
   const mealPlan = await db.mealPlan.create({

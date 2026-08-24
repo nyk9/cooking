@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ShoppingListCard } from "@/components/features/shopping-list";
+import { apiErrorMessage } from "@/lib/api-error";
 
 interface Recipe {
   id: string;
@@ -30,6 +31,7 @@ export default function ShoppingPage() {
   const [listName, setListName] = useState("");
   const [selectedRecipeIds, setSelectedRecipeIds] = useState<string[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -44,24 +46,39 @@ export default function ShoppingPage() {
   const createList = async () => {
     if (!listName.trim()) return;
     setCreating(true);
-    const res = await fetch("/api/shopping", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: listName, recipeIds: selectedRecipeIds }),
-    });
-    if (res.ok) {
+    setFormError(null);
+    try {
+      const res = await fetch("/api/shopping", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: listName, recipeIds: selectedRecipeIds }),
+      });
+      if (!res.ok) {
+        setFormError(
+          await apiErrorMessage(res, "リストの作成に失敗しました。もう一度お試しください。")
+        );
+        return;
+      }
       const list = await res.json();
       setLists((prev) => [list, ...prev]);
       setListName("");
       setSelectedRecipeIds([]);
       setShowForm(false);
+    } catch {
+      setFormError("通信に失敗しました。もう一度お試しください。");
+    } finally {
+      setCreating(false);
     }
-    setCreating(false);
   };
 
   const deleteList = async (id: string) => {
-    await fetch(`/api/shopping/${id}`, { method: "DELETE" });
-    setLists((prev) => prev.filter((l) => l.id !== id));
+    try {
+      const res = await fetch(`/api/shopping/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setLists((prev) => prev.filter((l) => l.id !== id));
+    } catch {
+      alert("削除に失敗しました。もう一度お試しください。");
+    }
   };
 
   const toggleRecipe = (id: string) => {
@@ -113,6 +130,12 @@ export default function ShoppingPage() {
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+
+          {formError && (
+            <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {formError}
             </div>
           )}
 

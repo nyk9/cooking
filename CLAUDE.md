@@ -89,6 +89,7 @@ GOOGLE_GENERATIVE_AI_API_KEY  # Google AI Studio APIキー
 
 ```bash
 bun run dev                                    # 開発サーバー起動
+bun run lint                                   # ESLint（eslint-plugin-reactがESLint 10未対応のためv9に固定）
 bunx prisma migrate dev --name <name>          # マイグレーション作成・適用
 bunx prisma studio                             # DB GUI
 bunx prisma generate                           # クライアント再生成
@@ -127,4 +128,4 @@ bunx prisma generate                           # クライアント再生成
 - 認証・認可（上記参照）
 - テスト（ユニットテスト・E2Eテスト）
 - APIレスポンスのページネーション
-- ESLintの修復（eslint-plugin-reactがESLint 10未対応で`bun run lint`が実行不能）
+- ESLint 10への移行（eslint-plugin-reactが対応し次第。現在はESLint 9に固定して運用）

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { apiErrorMessage } from "@/lib/api-error";
 
 type PreferenceCategory = "LIKE" | "DISLIKE" | "ALLERGY" | "OTHER";
 
@@ -37,6 +38,7 @@ const CATEGORY_COLORS: Record<PreferenceCategory, string> = {
 export default function PreferencesPage() {
   const [preferences, setPreferences] = useState<Preference[]>([]);
   const [loading, setLoading] = useState(true);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -51,21 +53,35 @@ export default function PreferencesPage() {
   }, []);
 
   const onSubmit = async (data: FormValues) => {
-    const res = await fetch("/api/preferences", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (res.ok) {
+    setFormError(null);
+    try {
+      const res = await fetch("/api/preferences", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        setFormError(
+          await apiErrorMessage(res, "登録に失敗しました。もう一度お試しください。")
+        );
+        return;
+      }
       const created = await res.json();
       setPreferences((prev) => [...prev, created]);
       reset({ category: "LIKE", value: "" });
+    } catch {
+      setFormError("通信に失敗しました。もう一度お試しください。");
     }
   };
 
   const handleDelete = async (id: string) => {
-    await fetch(`/api/preferences/${id}`, { method: "DELETE" });
-    setPreferences((prev) => prev.filter((p) => p.id !== id));
+    try {
+      const res = await fetch(`/api/preferences/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setPreferences((prev) => prev.filter((p) => p.id !== id));
+    } catch {
+      alert("削除に失敗しました。もう一度お試しください。");
+    }
   };
 
   const grouped = (Object.keys(CATEGORY_LABELS) as PreferenceCategory[]).map((cat) => ({
@@ -101,6 +117,9 @@ export default function PreferencesPage() {
           />
           {errors.value && (
             <p className="text-xs text-destructive">{errors.value.message}</p>
+          )}
+          {formError && (
+            <p className="text-xs text-destructive">{formError}</p>
           )}
         </div>
         <button
