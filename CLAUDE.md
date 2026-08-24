@@ -90,6 +90,7 @@ GOOGLE_GENERATIVE_AI_API_KEY  # Google AI Studio APIキー
 ```bash
 bun run dev                                    # 開発サーバー起動
 bun run lint                                   # ESLint（eslint-plugin-reactがESLint 10未対応のためv9に固定）
+bun test                                       # ユニットテスト（bun組み込み。探索範囲はbunfig.tomlでsrc配下に限定）
 bunx prisma migrate dev --name <name>          # マイグレーション作成・適用
 bunx prisma studio                             # DB GUI
 bunx prisma generate                           # クライアント再生成
@@ -126,6 +127,6 @@ bunx prisma generate                           # クライアント再生成
 ## 未実装・今後の課題
 
 - 認証・認可（上記参照）
-- テスト（ユニットテスト・E2Eテスト）
+- テスト: ユニットテスト基盤（`bun test`）を導入済み。純粋ロジック（`src/lib/expiry.ts`・`api-error.ts`・`ai.ts`）とAPIルートのエラー契約（`recipes/extract`）をカバー。E2E自動化は今後の課題
 - APIレスポンスのページネーション
 - ESLint 10への移行（eslint-plugin-reactが対応し次第。現在はESLint 9に固定して運用）

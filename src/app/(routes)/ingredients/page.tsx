@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { apiErrorMessage } from "@/lib/api-error";
+import { getExpiryStatus, isExpiringSoon } from "@/lib/expiry";
 
 interface Ingredient {
   id: string;
@@ -11,20 +12,6 @@ interface Ingredient {
   category: string | null;
   expiresAt: string | null;
   createdAt: string;
-}
-
-// now: 期限判定の基準時刻（ms）。グルーピング（expiringSoon）と同じ値を渡して表示と判定を一致させる
-function getExpiryStatus(expiresAt: string | null, now: number): {
-  label: string;
-  className: string;
-} | null {
-  if (!expiresAt) return null;
-  const exp = new Date(expiresAt);
-  const diffDays = Math.ceil((exp.getTime() - now) / (1000 * 60 * 60 * 24));
-  if (diffDays < 0) return { label: "期限切れ", className: "text-red-600 bg-red-50 dark:bg-red-950/30" };
-  if (diffDays === 0) return { label: "今日まで", className: "text-orange-600 bg-orange-50 dark:bg-orange-950/30" };
-  if (diffDays <= 3) return { label: `あと${diffDays}日`, className: "text-yellow-600 bg-yellow-50 dark:bg-yellow-950/30" };
-  return { label: `あと${diffDays}日`, className: "text-muted-foreground bg-muted/50" };
 }
 
 const CATEGORIES = ["野菜", "肉・魚", "乳製品", "調味料", "冷凍食品", "その他"];
@@ -133,13 +120,7 @@ export default function IngredientsPage() {
   };
 
   // 消費期限でグループ分け
-  const expiringSoon = ingredients.filter((i) => {
-    if (!i.expiresAt) return false;
-    const diffDays = Math.ceil(
-      (new Date(i.expiresAt).getTime() - now) / (1000 * 60 * 60 * 24)
-    );
-    return diffDays <= 3;
-  });
+  const expiringSoon = ingredients.filter((i) => isExpiringSoon(i.expiresAt, now));
   const others = ingredients.filter((i) => !expiringSoon.includes(i));
 
   if (loading) {

@@ -1,0 +1,4 @@
+# テスト探索を本プロジェクトの src 配下に限定する。
+# リポジトリ直下の translate/（無関係な Angular プロジェクト）の *.spec.ts を拾わないため。
+[test]
+root = "src"
