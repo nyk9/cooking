@@ -97,14 +97,15 @@ model CookingLog {
 }
 
 model Ingredient {
-  id        String    @id @default(cuid())
-  name      String
-  quantity  String?
-  unit      String?
-  category  String?
-  expiresAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id          String    @id @default(cuid())
+  name        String
+  quantity    String?
+  unit        String?
+  category    String?
+  expiresAt   DateTime?
+  purchasedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model MealPlan {

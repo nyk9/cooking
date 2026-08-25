@@ -12,6 +12,7 @@ const updateSchema = z.object({
   unit: z.string().optional().nullable(),
   category: z.string().optional().nullable(),
   expiresAt: z.string().datetime().optional().nullable(),
+  purchasedAt: z.string().datetime().optional().nullable(),
 });
 
 export async function PATCH(req: Request, { params }: Props) {
@@ -21,13 +22,16 @@ export async function PATCH(req: Request, { params }: Props) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
-  const { expiresAt, ...rest } = parsed.data;
+  const { expiresAt, purchasedAt, ...rest } = parsed.data;
   const ingredient = await db.ingredient.update({
     where: { id },
     data: {
       ...rest,
       ...(expiresAt !== undefined
         ? { expiresAt: expiresAt ? new Date(expiresAt) : null }
+        : {}),
+      ...(purchasedAt !== undefined
+        ? { purchasedAt: purchasedAt ? new Date(purchasedAt) : null }
         : {}),
     },
   });

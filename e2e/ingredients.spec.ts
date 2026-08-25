@@ -17,7 +17,7 @@ test("食材を追加すると期限が近いグループに表示され、削�
   await page.getByRole("button", { name: "+ 食材を追加" }).click();
   await page.getByPlaceholder("例: 卵").fill("E2Eテスト食材");
   // 消費期限を今日に設定（3日以内なので「期限が近い」グループに入る）
-  await page.locator('input[type="date"]').fill(todayStr());
+  await page.getByLabel("消費期限").fill(todayStr());
   await page.getByRole("button", { name: "追加する" }).click();
 
   await expect(page.getByText("E2Eテスト食材")).toBeVisible();
