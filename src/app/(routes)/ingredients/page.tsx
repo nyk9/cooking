@@ -11,6 +11,7 @@ interface Ingredient {
   unit: string | null;
   category: string | null;
   expiresAt: string | null;
+  purchasedAt: string | null;
   createdAt: string;
 }
 
@@ -27,6 +28,7 @@ export default function IngredientsPage() {
     unit: "",
     category: "",
     expiresAt: "",
+    purchasedAt: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -47,7 +49,14 @@ export default function IngredientsPage() {
   }, [fetchIngredients]);
 
   const resetForm = () => {
-    setForm({ name: "", quantity: "", unit: "", category: "", expiresAt: "" });
+    setForm({
+      name: "",
+      quantity: "",
+      unit: "",
+      category: "",
+      expiresAt: "",
+      purchasedAt: "",
+    });
     setEditId(null);
     setShowForm(false);
     setFormError(null);
@@ -61,6 +70,9 @@ export default function IngredientsPage() {
       category: ing.category ?? "",
       expiresAt: ing.expiresAt
         ? new Date(ing.expiresAt).toISOString().split("T")[0]
+        : "",
+      purchasedAt: ing.purchasedAt
+        ? new Date(ing.purchasedAt).toISOString().split("T")[0]
         : "",
     });
     setEditId(ing.id);
@@ -80,6 +92,9 @@ export default function IngredientsPage() {
       category: form.category || undefined,
       expiresAt: form.expiresAt
         ? new Date(form.expiresAt).toISOString()
+        : null,
+      purchasedAt: form.purchasedAt
+        ? new Date(form.purchasedAt).toISOString()
         : null,
     };
 
@@ -202,8 +217,31 @@ export default function IngredientsPage() {
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">消費期限</label>
+              <label
+                htmlFor="ingredient-purchased-at"
+                className="text-xs text-muted-foreground"
+              >
+                購入日
+              </label>
               <input
+                id="ingredient-purchased-at"
+                type="date"
+                value={form.purchasedAt}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, purchasedAt: e.target.value }))
+                }
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <label
+                htmlFor="ingredient-expires-at"
+                className="text-xs text-muted-foreground"
+              >
+                消費期限
+              </label>
+              <input
+                id="ingredient-expires-at"
                 type="date"
                 value={form.expiresAt}
                 onChange={(e) => setForm((f) => ({ ...f, expiresAt: e.target.value }))}
@@ -319,16 +357,28 @@ function IngredientList({
                   </span>
                 )}
               </div>
-              {ing.expiresAt && (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  期限:{" "}
-                  {new Date(ing.expiresAt).toLocaleDateString("ja-JP", {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </p>
-              )}
+              <div className="flex gap-3 flex-wrap">
+                {ing.purchasedAt && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    購入:{" "}
+                    {new Date(ing.purchasedAt).toLocaleDateString("ja-JP", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </p>
+                )}
+                {ing.expiresAt && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    期限:{" "}
+                    {new Date(ing.expiresAt).toLocaleDateString("ja-JP", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </p>
+                )}
+              </div>
             </div>
             <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
               <button
